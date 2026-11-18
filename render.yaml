@@ -1,0 +1,26 @@
+# Render blueprint: PostgreSQL + Express API. Frontend deploys separately to Vercel (root: frontend,
+# env VITE_API_URL=https://<your-api>.onrender.com).
+databases:
+  - name: govflow-db
+    plan: free
+services:
+  - type: web
+    name: govflow-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: govflow-db, property: connectionString }
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://YOUR-APP.vercel.app
+      - key: ANTHROPIC_API_KEY
+        sync: false   # set in the Render dashboard; without it the assistant runs in Basic mode
+      - key: ASSISTANT_MODEL
+        sync: false   # optional; defaults to claude-opus-5-5
+      - key: SEED_DEMO
+        value: "true"

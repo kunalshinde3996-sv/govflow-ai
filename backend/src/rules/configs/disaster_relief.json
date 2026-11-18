@@ -1,0 +1,81 @@
+{
+  "scheme_type": "disaster_relief",
+  "name": "Disaster Relief Claim",
+  "status": "live",
+  "department": "District Disaster Management Authority, North Goa",
+  "description": "Ex-gratia relief for households affected by notified natural disasters. Runs on the same case engine as Land Acquisition with a different rule-set.",
+  "workflow": {
+    "stages": ["DRAFT", "SUBMITTED", "DOC_VERIFICATION", "ELIGIBILITY_CHECK", "COMPENSATION_CALCULATED", "OFFICER_REVIEW", "APPROVED"]
+  },
+  "notification": {
+    "number": "DDMA/NG/2026/07",
+    "title": "Monsoon 2026 - notified calamities",
+    "allowed_incident_types": ["Flood", "Cyclone", "Landslide"]
+  },
+  "form_fields": [
+    { "key": "owner_name", "label": "Applicant full name", "type": "text", "required": true },
+    { "key": "village", "label": "Village", "type": "text", "required": true },
+    { "key": "incident_type", "label": "Type of disaster", "type": "select", "required": true, "options": ["Flood", "Cyclone", "Landslide", "Fire", "Other"] },
+    { "key": "incident_date", "label": "Date of incident", "type": "date", "required": true },
+    { "key": "damage_category", "label": "Damage to dwelling", "type": "select", "required": true, "options": ["None", "Minor", "Major", "Severe"] },
+    { "key": "crop_area_ha", "label": "Crop area affected (hectares)", "type": "number", "required": false },
+    { "key": "crop_loss_percent", "label": "Crop loss (%)", "type": "number", "required": false },
+    { "key": "livelihood_loss", "label": "Loss of livelihood assets (boat, tools, shop)?", "type": "select", "required": false, "options": ["No", "Yes"] }
+  ],
+  "required_documents": [
+    { "type": "id_proof", "label": "ID proof" },
+    { "type": "residence_proof", "label": "Residence proof" }
+  ],
+  "duplicate_check": { "keys": ["form.incident_type", "form.incident_date"], "scope": "same_applicant" },
+  "ocr": {
+    "min_overall_confidence": 70,
+    "min_field_confidence": 60,
+    "min_text_length": 25,
+    "document_fields": {
+      "id_proof": ["owner_name", "id_number"],
+      "residence_proof": ["owner_name"]
+    },
+    "classifications": [],
+    "patterns": {
+      "owner_name": { "regex": "(?:Owner|Name|Holder|Occupant|Resident)(?:\\s*Name)?\\s*[:\\-]\\s*([A-Za-z. ]{3,60})", "group": 1 },
+      "id_number": { "regex": "\\b(?:Aadhaar|Aadhar|EPIC|PAN|ID)\\b\\s*(?:No\\.?|Number)?\\s*[:\\-]\\s*(\\d[\\d ]{7,13}\\d|[A-Z]{3,5}\\d{4}[A-Z])", "group": 1, "normalize": "compact" }
+    }
+  },
+  "eligibility": {
+    "rules": [
+      {
+        "id": "docs_complete", "type": "documents_complete", "severity": "blocking", "label": "Document completeness",
+        "pass": "All {count} required documents were supplied.", "fail": "Required documents missing: {missing}."
+      },
+      {
+        "id": "ocr_quality", "type": "ocr_confidence", "min": 70, "severity": "blocking", "label": "Document legibility / OCR confidence",
+        "pass": "All documents verified with {avg}% average OCR confidence{manual}.", "fail": "Documents below the {min}% confidence threshold: {low}."
+      },
+      {
+        "id": "name_match", "type": "field_consistency", "field": "owner_name", "fuzzy": true, "min_similarity": 0.8, "severity": "blocking", "label": "Applicant identity consistent across documents",
+        "pass": "Applicant name \"{value}\" is consistent across {count} document(s) ({docs}).",
+        "fail": "Applicant name \"{value}\" does not match the documents: {mismatches}."
+      },
+      {
+        "id": "incident_notified", "type": "value_in_list", "source": "form.incident_type", "list": "notification.allowed_incident_types", "severity": "blocking", "label": "Disaster type is a notified calamity",
+        "pass": "'{value}' is a notified calamity for this relief period.", "fail": "'{value}' is not a notified calamity (notified: {list})."
+      },
+      {
+        "id": "incident_window", "type": "date_within", "source": "form.incident_date", "max_days": 90, "severity": "blocking", "label": "Claim filed within 90 days of incident",
+        "pass": "Incident on {value} is {days} days before filing, within the {max}-day window.", "fail": "Incident on {value} is {days} days before filing, outside the {max}-day window."
+      },
+      {
+        "id": "no_duplicate", "type": "no_duplicate", "severity": "blocking", "label": "Duplicate claim check",
+        "pass": "No duplicate claim found for this incident.", "fail": "This applicant already has a live claim for the same incident: {dups}."
+      }
+    ]
+  },
+  "compensation": {
+    "formula_description": "Relief = Dwelling damage schedule + (Crop area x Loss% x Rate per hectare) + Livelihood support where applicable",
+    "line_items": [
+      { "id": "housing", "label": "Dwelling damage relief", "type": "lookup", "key": "form.damage_category", "table": { "None": 0, "Minor": 6500, "Major": 25000, "Severe": 120000 }, "skip_if_zero": true },
+      { "id": "crop", "label": "Crop loss relief (INR 18,000 per hectare, pro-rata)", "type": "product", "factors": ["form.crop_area_ha", "form.crop_loss_percent", 18000], "scale": 0.01, "basis": "Crop area x loss % x INR 18,000/ha", "skip_if_zero": true },
+      { "id": "livelihood", "label": "Livelihood asset support", "type": "fixed", "amount": 10000, "condition": { "field": "form.livelihood_loss", "equals": "Yes" } }
+    ]
+  }
+}

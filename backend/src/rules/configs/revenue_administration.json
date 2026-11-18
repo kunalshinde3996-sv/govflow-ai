@@ -1,0 +1,24 @@
+{
+  "scheme_type": "revenue_administration",
+  "name": "Revenue Administration",
+  "status": "preview",
+  "department": "Revenue Department, North Goa",
+  "description": "Mutation of land records, certificates (income, caste, domicile) and revenue recovery. Sample rule-config only; shows how a new service is declared without code changes.",
+  "workflow": { "stages": ["DRAFT", "SUBMITTED", "DOC_VERIFICATION", "ELIGIBILITY_CHECK", "OFFICER_REVIEW", "APPROVED"] },
+  "form_fields": [
+    { "key": "owner_name", "label": "Applicant name", "type": "text", "required": true },
+    { "key": "request_type", "label": "Service requested", "type": "select", "options": ["Mutation of land record", "Income certificate", "Domicile certificate"] },
+    { "key": "survey_number", "label": "Survey number (for mutation)", "type": "text" }
+  ],
+  "required_documents": [
+    { "type": "id_proof", "label": "ID proof" },
+    { "type": "supporting_deed", "label": "Sale deed / inheritance proof / income proof" }
+  ],
+  "eligibility": {
+    "rules": [
+      { "id": "docs_complete", "type": "documents_complete", "severity": "blocking", "label": "Document completeness", "pass": "All required documents supplied.", "fail": "Missing: {missing}." },
+      { "id": "owner_match", "type": "field_consistency", "field": "owner_name", "fuzzy": true, "min_similarity": 0.8, "severity": "blocking", "label": "Identity consistency", "pass": "Name consistent across documents.", "fail": "Name mismatch: {mismatches}." }
+    ]
+  },
+  "compensation": null
+}

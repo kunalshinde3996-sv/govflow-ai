@@ -1,0 +1,30 @@
+{
+  "scheme_type": "scheme_implementation",
+  "name": "Government Scheme Implementation",
+  "status": "preview",
+  "department": "District Administration, North Goa",
+  "description": "Beneficiary enrolment and benefit disbursement for welfare schemes (e.g. income-linked subsidies). Sample rule-config only.",
+  "workflow": { "stages": ["DRAFT", "SUBMITTED", "DOC_VERIFICATION", "ELIGIBILITY_CHECK", "COMPENSATION_CALCULATED", "OFFICER_REVIEW", "APPROVED"] },
+  "form_fields": [
+    { "key": "owner_name", "label": "Beneficiary name", "type": "text", "required": true },
+    { "key": "annual_income", "label": "Annual household income (INR)", "type": "number", "required": true },
+    { "key": "household_size", "label": "Household members", "type": "number", "required": true }
+  ],
+  "required_documents": [
+    { "type": "id_proof", "label": "ID proof" },
+    { "type": "income_certificate", "label": "Income certificate" }
+  ],
+  "eligibility": {
+    "rules": [
+      { "id": "docs_complete", "type": "documents_complete", "severity": "blocking", "label": "Document completeness", "pass": "All required documents supplied.", "fail": "Missing: {missing}." },
+      { "id": "income_cap", "type": "numeric_range", "source": "form.annual_income", "min": 0, "max": 300000, "severity": "blocking", "label": "Income within scheme cap", "pass": "Annual income INR {value} is within the INR {max} cap.", "fail": "Annual income INR {value} exceeds the INR {max} cap." }
+    ]
+  },
+  "compensation": {
+    "formula_description": "Benefit = Base subsidy + (Household members x Per-member top-up)",
+    "line_items": [
+      { "id": "base", "label": "Base annual subsidy", "type": "fixed", "amount": 12000 },
+      { "id": "members", "label": "Per-member top-up (INR 1,500 each)", "type": "product", "factors": ["form.household_size", 1500] }
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "scheme_type": "land_acquisition",
+  "name": "Land Acquisition Compensation",
+  "status": "live",
+  "department": "Office of the Collector, North Goa District",
+  "description": "Compensation for private land acquired for public purposes, computed on LARR Act 2013 principles (market value x area + 100% solatium + additional assets).",
+  "workflow": {
+    "stages": ["DRAFT", "SUBMITTED", "DOC_VERIFICATION", "ELIGIBILITY_CHECK", "COMPENSATION_CALCULATED", "OFFICER_REVIEW", "APPROVED"]
+  },
+  "notification": {
+    "number": "NG/LA/2026/014",
+    "title": "Mapusa Bypass Widening Project",
+    "allowed_classifications": ["Agricultural", "Residential"],
+    "survey_numbers": ["112/1", "112/2", "113/4", "114/1", "115/2", "115/3", "118/6", "121/1", "121/2", "125/7"]
+  },
+  "form_fields": [
+    { "key": "owner_name", "label": "Land owner full name (as per records)", "type": "text", "required": true },
+    { "key": "survey_number", "label": "Survey / Sub-division number", "type": "text", "required": true, "placeholder": "e.g. 112/1" },
+    { "key": "village", "label": "Village", "type": "text", "required": true },
+    { "key": "taluka", "label": "Taluka", "type": "text", "required": true },
+    { "key": "land_area", "label": "Area to be acquired (sq m)", "type": "number", "required": true },
+    { "key": "land_classification", "label": "Land classification", "type": "select", "required": true, "options": ["Agricultural", "Residential", "Commercial", "Industrial", "Forest"] },
+    { "key": "structure_value", "label": "Assessed value of structures on land (INR)", "type": "number", "required": false },
+    { "key": "crop_value", "label": "Assessed standing crop value (INR)", "type": "number", "required": false }
+  ],
+  "required_documents": [
+    { "type": "land_title", "label": "Land title deed" },
+    { "type": "id_proof", "label": "ID proof" },
+    { "type": "survey_extract", "label": "Survey number / 7-12 extract" },
+    { "type": "ownership_papers", "label": "Ownership papers" }
+  ],
+  "duplicate_check": { "keys": ["form.survey_number"], "scope": "any_applicant" },
+  "ocr": {
+    "min_overall_confidence": 70,
+    "min_field_confidence": 60,
+    "min_text_length": 25,
+    "document_fields": {
+      "land_title": ["owner_name", "survey_number"],
+      "id_proof": ["owner_name", "id_number"],
+      "survey_extract": ["owner_name", "survey_number", "land_area", "land_classification"],
+      "ownership_papers": ["owner_name"]
+    },
+    "classifications": ["Agricultural", "Residential", "Commercial", "Industrial", "Forest"],
+    "patterns": {
+      "owner_name": { "regex": "(?:Owner|Name|Holder|Occupant|Khatedar)(?:\\s*Name)?\\s*[:\\-]\\s*([A-Za-z. ]{3,60})", "group": 1 },
+      "survey_number": { "regex": "(?:Survey|Sy\\.?|S\\.?\\s*No\\.?|Gat)\\s*(?:No\\.?|Number)?\\s*[:\\-]?\\s*(\\d{1,4}\\s*/\\s*[A-Za-z0-9]{1,3}|\\d{1,4})", "group": 1, "normalize": "compact" },
+      "land_area": { "regex": "(?:Area|Extent)\\s*[:\\-]?\\s*([\\d.,]+)\\s*(sq\\.?\\s*m|sqm|square\\s*met(?:er|re)s?|ha|hectares?)", "group": 1, "unit_group": 2, "normalize": "area_sqm" },
+      "land_classification": { "regex": "(?:Classification|Land\\s*Use|Land\\s*Type|Class)\\s*[:\\-]\\s*([A-Za-z ]{4,30})", "group": 1, "normalize": "classification" },
+      "id_number": { "regex": "\\b(?:Aadhaar|Aadhar|EPIC|PAN|ID)\\b\\s*(?:No\\.?|Number)?\\s*[:\\-]\\s*(\\d[\\d ]{7,13}\\d|[A-Z]{3,5}\\d{4}[A-Z])", "group": 1, "normalize": "compact" }
+    }
+  },
+  "eligibility": {
+    "rules": [
+      {
+        "id": "docs_complete", "type": "documents_complete", "severity": "blocking", "label": "Document completeness",
+        "pass": "All {count} required documents were supplied.",
+        "fail": "Required documents missing: {missing}."
+      },
+      {
+        "id": "ocr_quality", "type": "ocr_confidence", "min": 70, "severity": "blocking", "label": "Document legibility / OCR confidence",
+        "pass": "All documents verified with {avg}% average OCR confidence{manual}.",
+        "fail": "Documents below the {min}% confidence threshold: {low}."
+      },
+      {
+        "id": "owner_match", "type": "field_consistency", "field": "owner_name", "fuzzy": true, "min_similarity": 0.8, "severity": "blocking", "label": "Ownership validity (owner name consistent across documents)",
+        "pass": "Owner name \"{value}\" is consistent across {count} document(s) ({docs}).",
+        "fail": "Owner name \"{value}\" does not match the documents: {mismatches}."
+      },
+      {
+        "id": "survey_match", "type": "field_consistency", "field": "survey_number", "fuzzy": false, "severity": "blocking", "label": "Survey number consistent across documents",
+        "pass": "Survey number {value} matches in {count} document(s) ({docs}).",
+        "fail": "Survey number {value} does not match the documents: {mismatches}."
+      },
+      {
+        "id": "survey_notified", "type": "value_in_list", "source": "form.survey_number", "list": "notification.survey_numbers", "severity": "blocking", "label": "Survey number covered by acquisition notification",
+        "pass": "Survey number {value} is covered by the acquisition notification.",
+        "fail": "Survey number {value} is not listed in the acquisition notification."
+      },
+      {
+        "id": "classification_match", "type": "value_in_list", "source": "form.land_classification", "list": "notification.allowed_classifications", "severity": "blocking", "label": "Land classification matches notification",
+        "pass": "Land classification '{value}' matches the acquisition notification.",
+        "fail": "Land classification '{value}' is not eligible under the notification (allowed: {list})."
+      },
+      {
+        "id": "area_sanity", "type": "numeric_range", "source": "form.land_area", "min": 1, "max": 500000, "severity": "advisory", "label": "Claimed area within plausible range",
+        "pass": "Claimed area of {value} sq m is within the plausible range.",
+        "fail": "Claimed area of {value} sq m is outside the plausible range ({min} to {max} sq m); verify with the survey records."
+      },
+      {
+        "id": "no_duplicate", "type": "no_duplicate", "severity": "blocking", "label": "Duplicate application check",
+        "pass": "No duplicate application found.",
+        "fail": "A live application already exists for the same survey number: {dups}."
+      }
+    ]
+  },
+  "compensation": {
+    "formula_description": "Compensation = (Market Value x Area) + Solatium (100% of assessed value) + Additional assets (structures, crops) + Rehabilitation allowance where applicable",
+    "market_value_table": {
+      "by": "form.land_classification",
+      "rates": { "Agricultural": 1850, "Residential": 6200, "Commercial": 11500, "Industrial": 7400 },
+      "default": 0
+    },
+    "line_items": [
+      { "id": "land_value", "label": "Land value (Market value x Area)", "type": "product", "factors": ["$market_value", "form.land_area"], "basis_template": "INR {market_value} per sq m x {land_area} sq m" },
+      { "id": "structures", "label": "Value of structures", "type": "input", "source": "form.structure_value", "skip_if_zero": true },
+      { "id": "crops", "label": "Standing crop damage", "type": "input", "source": "form.crop_value", "skip_if_zero": true },
+      { "id": "solatium", "label": "Solatium (100% of assessed value)", "type": "percent_of", "of": ["land_value", "structures", "crops"], "percent": 100 },
+      { "id": "rehab", "label": "Resettlement allowance (residential)", "type": "fixed", "amount": 50000, "condition": { "field": "form.land_classification", "equals": "Residential" } }
+    ]
+  }
+}
