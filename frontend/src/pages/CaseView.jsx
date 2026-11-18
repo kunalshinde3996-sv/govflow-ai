@@ -81,17 +81,17 @@ export default function CaseView() {
             </dl>
           </div>
 
-          <div className="card scroll-mt-4" id="documents">
+          <div className="card scroll-mt-36" id="documents">
             <div className="card-h">Document verification <span className="text-xs font-normal text-muted">Minimum accepted confidence: {c.scheme.ocr_min}%</span></div>
             <DocReview c={c} canEdit={canEditDocs} onChanged={load} />
           </div>
 
-          <div id="eligibility" className="scroll-mt-4"><EligibilityCard c={c} /></div>
-          <div id="compensation" className="scroll-mt-4"><CompensationCard c={c} canOverride={canReview} onChanged={load} /></div>
+          <div id="eligibility" className="scroll-mt-36"><EligibilityCard c={c} /></div>
+          <div id="compensation" className="scroll-mt-36"><CompensationCard c={c} canOverride={canReview} onChanged={load} /></div>
         </div>
 
         <div className="space-y-4">
-          <div className="card scroll-mt-4" id="progress"><div className="card-h">Case progress</div><div className="card-b"><Timeline c={c} /></div></div>
+          <div className="card scroll-mt-36" id="progress"><div className="card-h">Case progress</div><div className="card-b"><Timeline c={c} /></div></div>
           {staff && c.needs_manual_review && <ResolveReview c={c} onDone={load} />}
           {canReview && <DecisionPanel c={c} onDone={load} />}
           {c.decision && !c.decision.pending && (
@@ -105,7 +105,7 @@ export default function CaseView() {
         </div>
       </div>
 
-      <div className="card mt-4 scroll-mt-4" id="audit">
+      <div className="card mt-4 scroll-mt-36" id="audit">
         <div className="card-h">Audit trail <span className="text-xs font-normal text-muted">Immutable record of every action on this case</span></div>
         <AuditTable rows={audit} />
       </div>

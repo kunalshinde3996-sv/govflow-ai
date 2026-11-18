@@ -39,7 +39,7 @@ export default function Modules() {
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="space-y-2">
           {mods.map((m) => (
-            <button key={m.scheme_type} onClick={() => setSel(m.scheme_type)} className={`card card-b w-full text-left ${sel === m.scheme_type ? 'ring-2 ring-navy' : 'hover:bg-panel'}`}>
+            <button key={m.scheme_type} onClick={() => setSel(m.scheme_type)} className={`card card-b card-hover w-full text-left ${sel === m.scheme_type ? 'ring-2 ring-navy' : 'hover:bg-panel'}`}>
               <div className="flex items-center justify-between gap-2"><span className="font-semibold">{m.name}</span>
                 <span className={`text-[11px] border rounded px-1.5 py-0.5 ${m.status === 'live' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-slate-100 border-slate-300 text-slate-600'}`}>{m.status === 'live' ? 'Live' : 'Sample config'}</span></div>
               <div className="text-xs text-muted mt-1">{m.department}</div>
